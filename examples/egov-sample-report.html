@@ -1,0 +1,682 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>공급망 리포트 · egov-sample</title>
+<style>
+:root{--bg:#f7f7f5;--surface:#fff;--text:#1d1d1f;--muted:#6b6b70;--line:#e3e3e0;
+--p1:#c2410c;--p1-bg:#fff1e8;--ok:#15803d;--ok-bg:#ecfdf3;--info:#1d4ed8;--info-bg:#eef3ff;
+--warn:#a16207;--warn-bg:#fef9e7;--chip:#f0f0ee;--mono:ui-monospace,SFMono-Regular,Menlo,monospace}
+@media (prefers-color-scheme:dark){:root{--bg:#141416;--surface:#1c1c1f;--text:#ececef;--muted:#9a9aa2;
+--line:#2e2e33;--p1:#fb923c;--p1-bg:#2a1a10;--ok:#4ade80;--ok-bg:#10241a;--info:#93b4ff;--info-bg:#151d33;
+--warn:#facc15;--warn-bg:#2a2410;--chip:#26262b}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);
+font:15px/1.6 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Pretendard","Noto Sans KR",sans-serif}
+main{max-width:1040px;margin:0 auto;padding:32px 16px 64px}
+h1{font-size:24px;margin:0 0 4px;letter-spacing:-.01em}
+h2{font-size:17px;margin:36px 0 12px}
+.meta{color:var(--muted);font-size:13px}
+.funnel{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:24px 0 8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.tile .n{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums}
+.tile .l{font-size:13px;color:var(--muted)}
+.tile .s{font-size:12px;color:var(--muted)}
+.tile.p1 .n{color:var(--p1)} .tile.c .n{color:var(--ok)}
+.callout{background:var(--info-bg);color:var(--text);border:1px solid var(--line);border-left:3px solid var(--info);
+border-radius:8px;padding:12px 14px;margin:16px 0;font-size:14px}
+.callout.warn{background:var(--warn-bg);border-left-color:var(--warn)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;margin:8px 0;overflow:hidden}
+.card summary{list-style:none;cursor:pointer;padding:12px 16px;display:grid;
+grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;align-items:center}
+.card summary::-webkit-details-marker{display:none}
+.pkg{font-family:var(--mono);font-size:14px;font-weight:600;overflow-wrap:anywhere}
+.pkg .ver{color:var(--muted);font-weight:400}
+.badges{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.badge{font-size:12px;padding:2px 8px;border-radius:999px;background:var(--chip);white-space:nowrap}
+.sev-CRITICAL,.sev-HIGH{color:var(--p1);background:var(--p1-bg)}
+.cat-c{color:var(--ok);background:var(--ok-bg)} .cat-b,.cat-a{color:var(--info);background:var(--info-bg)}
+.review{color:var(--warn);background:var(--warn-bg)}
+.sub{grid-column:1/-1;font-size:13px;color:var(--muted)}
+.body{border-top:1px solid var(--line);padding:12px 16px 16px;font-size:14px}
+.reason{margin:6px 0}
+.ev{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--chip);margin-left:4px}
+.fix{margin-top:10px;padding:8px 10px;border-radius:6px;background:var(--chip)}
+pre{font-family:var(--mono);font-size:12px;background:var(--chip);padding:10px;border-radius:6px;
+overflow-x:auto;white-space:pre-wrap;word-break:break-all;max-height:260px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:8px}
+td,th{text-align:left;padding:4px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500}
+td.num{font-variant-numeric:tabular-nums}
+td:first-child{white-space:nowrap;font-family:var(--mono);font-size:12px}
+.empty{color:var(--muted);font-size:14px}
+footer{margin-top:40px;font-size:12px;color:var(--muted)}
+@media (max-width:640px){.funnel{grid-template-columns:repeat(2,1fr)}.card summary{grid-template-columns:1fr}
+.badges{justify-content:flex-start}}
+</style></head><body><main>
+<h1>SW 공급망 취약점 리포트 · egov-sample</h1>
+<div class="meta">2026-11-01 00:51 · egovframe-web-5.0.0.war · SBOM 구성요소 76개 ·
+판정 모델 gpt-5.5 · LLM 호출 18회 · $0.4432 · 소요 43초</div>
+<div class="funnel">
+<div class="tile"><div class="l">스캔된 취약점</div><div class="n">39</div><div class="s">9개 패키지</div></div>
+<div class="tile"><div class="l">Boot 최신 패치 사용 중</div><div class="n">39</div><div class="s">-</div></div>
+<div class="tile p1"><div class="l">지금 조치 (P1)</div><div class="n">8</div><div class="s">실행되며 CRITICAL/HIGH·KEV · 3개 패키지</div></div>
+<div class="tile c"><div class="l">실행 안 됨 (C)</div><div class="n">0</div><div class="s">0개 패키지 · 근거 포함</div></div>
+</div>
+
+
+<h2>② 지금 조치 <span class="meta">3개 패키지 · 30건</span></h2><p class="meta">Boot 패치 후에도 남고, 실제로 실행되며(A·B), CRITICAL/HIGH 또는 실제 악용(KEV)인 취약점이 있는 패키지</p><details class="card" open><summary><div class="pkg">org.springframework:spring-webmvc <span class="ver">6.2.11</span></div><div class="badges"><span class="badge sev-CRITICAL">CRITICAL · 13건</span><span class="badge cat-a">A 코드가 직접 사용</span></div><div class="sub">전이 의존성 · egovframe-rte-ptl-mvc · 최대 EPSS 0.006 · 판정 규칙</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — spring-webmvc를 7.0.9 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· 소스가 org.springframework.web.servlet.mvc.support import<span class="ev">reach</span></div><details><summary class="meta" style="cursor:pointer">취약점 13건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-47884</td><td>CRITICAL</td><td class="num">0.006</td><td>7.0.9</td><td>남음</td><td>org.springframework/spring-webmvc: Spring Framework: Remote Code Execution via i</td></tr><tr><td>CVE-2026-47890</td><td>CRITICAL</td><td class="num">0.006</td><td>7.0.9</td><td>남음</td><td>org.springframework/spring-webmvc: org.springframework/spring-webflux: Spring Fr</td></tr><tr><td>CVE-2026-41842</td><td>HIGH</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Denial of Service when resolving static reso</td></tr><tr><td>CVE-2026-41845</td><td>HIGH</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>org.springframework: Spring Framework: Cross-site scripting (XSS) via incorrect </td></tr><tr><td>CVE-2026-22737</td><td>MEDIUM</td><td class="num">0.004</td><td>7.0.6, 6.2.17</td><td>남음</td><td>Spring Framework: Spring Framework: Information disclosure via Java scripting en</td></tr><tr><td>CVE-2026-41843</td><td>MEDIUM</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-webflux: spring-webmvc: Spring Framework: Information Disclosure via Path</td></tr><tr><td>CVE-2026-22745</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.7, 6.2.18</td><td>남음</td><td>spring-webflux: Spring MVC and Spring WebFlux: Denial of Service via slow static</td></tr><tr><td>CVE-2026-41841</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring MVC and WebFlux applications: Information Disclosure vi</td></tr><tr><td>CVE-2026-41853</td><td>MEDIUM</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Request smuggling vulnerability in Spring MV</td></tr><tr><td>CVE-2026-41846</td><td>MEDIUM</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Cross-site scripting (XSS) via user-supplied</td></tr><tr><td>CVE-2026-41844</td><td>MEDIUM</td><td class="num">0.001</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Open Redirect via crafted link</td></tr><tr><td>CVE-2026-22741</td><td>LOW</td><td class="num">0.002</td><td>7.0.7, 6.2.18</td><td>남음</td><td>Spring MVC: Spring WebFlux: Spring MVC and Spring WebFlux: Denial of Service via</td></tr><tr><td>CVE-2026-22735</td><td>LOW</td><td class="num">0.001</td><td>7.0.6, 6.2.17</td><td>남음</td><td>org.springframework/spring-webmvc: org.springframework/spring-webflux: Spring MV</td></tr></table></details></div></details><details class="card" open><summary><div class="pkg">org.springframework:spring-webflux <span class="ver">6.2.11</span></div><div class="badges"><span class="badge sev-CRITICAL">CRITICAL · 14건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · egovframe-rte-ptl-reactive · 최대 EPSS 0.006 · 판정 에이전트</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — spring-webflux를 7.0.9 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· org.springframework:spring-webflux 6.2.11은 런타임 클래스패스에 있으며 org.egovframe.rte:egovframe-rte-ptl-reactive:5.0.1을 통해 전이 의존성으로 유입된다.<span class="ev">E15</span><span class="ev">T1</span></div><div class="reason">· 애플리케이션 소스에서 spring-webflux/WebFlux API를 직접 import하거나 WebFlux 라우터·설정 클래스를 사용하는 흔적은 검색되지 않았다.<span class="ev">E16</span><span class="ev">T3</span><span class="ev">T8</span></div><div class="reason">· 다만 CVE-2026-47890 및 CVE-2026-47892는 spring-webflux 관련 CRITICAL 취약점이고, 현재 설치 버전 6.2.11의 수정 버전으로 7.0.9가 제시되어 있다. WebFlux 관련 기능이 설정으로 비활성화되었다는 근거도 없어 C로 낮출 수 없다.<span class="ev">E1</span><span class="ev">E2</span><span class="ev">T7</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 8개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-47890&quot;,
+  &quot;severity&quot;: &quot;CRITICAL&quot;,
+  &quot;epss&quot;: 0.00564,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.9&quot;,
+  &quot;title&quot;: &quot;org.springframework/spring-webmvc: org.springframework/spring-webflux: Spring Framework: Stream corruption in Server-Sent Events (SSE) with view fragments&quot;
+ },
+ &quot;E15&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;org.egovframe.rte:egovframe-rte-ptl-reactive&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E16&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;E2&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-47892&quot;,
+  &quot;severity&quot;: &quot;CRITICAL&quot;,
+  &quot;epss&quot;: 0.00529,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.9&quot;,
+  &quot;title&quot;: &quot;org.springframework/spring-webflux: Spring Framework: Header Predicate Bypass in WebFlux Functional Endpoints&quot;
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.springframework:spring-webflux&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.springframework:spring-webflux:6.2.11 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-reactive:5.0.1&quot;
+  ]
+ },
+ &quot;T3&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;org\\.springframework\\.web\\.reactive|WebFlux|RouterFunction|ServerResponse|ServerRequest|@EnableWebFlux|Flux&lt;ServerSentEvent|text/event-stream|SseEmitter|ResourceHandlerRegistry|WebFluxConfigurer&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T7&quot;: {
+  &quot;tool&quot;: &quot;search_config&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;spring\\.main\\.web-application-type\\s*[:=]\\s*(none|servlet)|spring\\.autoconfigure\\.exclude|spring\\.webflux|spring\\.codec|spring\\.web\\.resources\\.add-mappings|spring\\.web\\.resources\\.static-locations|spring\\.webflux\\.static-path-pattern|spring\\.webflux\\.multipart\\..*enabled&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T8&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;implements\\s+WebFluxConfigurer|addResourceHandlers|resourceHandler|ViewResolver|ScriptTemplateConfigurer|ServerSentEvent|BodyInserters|Multipart|Part\\b|exchange\\(&quot;
+  },
+  &quot;result&quot;: []
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 14건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-47890</td><td>CRITICAL</td><td class="num">0.006</td><td>7.0.9</td><td>남음</td><td>org.springframework/spring-webmvc: org.springframework/spring-webflux: Spring Fr</td></tr><tr><td>CVE-2026-47892</td><td>CRITICAL</td><td class="num">0.005</td><td>7.0.9</td><td>남음</td><td>org.springframework/spring-webflux: Spring Framework: Header Predicate Bypass in</td></tr><tr><td>CVE-2026-41842</td><td>HIGH</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Denial of Service when resolving static reso</td></tr><tr><td>CVE-2026-22737</td><td>MEDIUM</td><td class="num">0.004</td><td>7.0.6, 6.2.17</td><td>남음</td><td>Spring Framework: Spring Framework: Information disclosure via Java scripting en</td></tr><tr><td>CVE-2026-41843</td><td>MEDIUM</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-webflux: spring-webmvc: Spring Framework: Information Disclosure via Path</td></tr><tr><td>CVE-2026-22740</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.7, 6.2.18</td><td>남음</td><td>spring-webflux: Spring WebFlux: Denial of Service via temporary file accumulatio</td></tr><tr><td>CVE-2026-22745</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.7, 6.2.18</td><td>남음</td><td>spring-webflux: Spring MVC and Spring WebFlux: Denial of Service via slow static</td></tr><tr><td>CVE-2026-41841</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring MVC and WebFlux applications: Information Disclosure vi</td></tr><tr><td>CVE-2026-41840</td><td>MEDIUM</td><td class="num">0.003</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring WebFlux: Denial of Service via multipart request proces</td></tr><tr><td>CVE-2026-41839</td><td>MEDIUM</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Privilege escalation via session ID exchange</td></tr><tr><td>CVE-2026-41853</td><td>MEDIUM</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Request smuggling vulnerability in Spring MV</td></tr><tr><td>CVE-2026-41844</td><td>MEDIUM</td><td class="num">0.001</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Open Redirect via crafted link</td></tr><tr><td>CVE-2026-22741</td><td>LOW</td><td class="num">0.002</td><td>7.0.7, 6.2.18</td><td>남음</td><td>Spring MVC: Spring WebFlux: Spring MVC and Spring WebFlux: Denial of Service via</td></tr><tr><td>CVE-2026-22735</td><td>LOW</td><td class="num">0.001</td><td>7.0.6, 6.2.17</td><td>남음</td><td>org.springframework/spring-webmvc: org.springframework/spring-webflux: Spring MV</td></tr></table></details></div></details><details class="card" open><summary><div class="pkg">org.springframework:spring-expression <span class="ver">6.2.11</span></div><div class="badges"><span class="badge sev-HIGH">HIGH · 3건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · egovframe-rte-ptl-mvc · 최대 EPSS 0.004 · 판정 에이전트</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — spring-expression를 6.2.19 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· org.springframework:spring-expression 6.2.11 is installed and affected by CVE-2026-41850/HIGH, CVE-2026-41851/MEDIUM, and CVE-2026-41852/LOW; fixed versions include 6.2.19.<span class="ev">E1</span><span class="ev">E2</span><span class="ev">E3</span></div><div class="reason">· The application source does not directly import Spring Expression / SpEL APIs, but spring-expression is present at runtime transitively through org.springframework:spring-webmvc from org.egovframe.rte:egovframe-rte-ptl-mvc.<span class="ev">E4</span><span class="ev">E5</span><span class="ev">T1</span><span class="ev">T2</span><span class="ev">T3</span></div><div class="reason">· Because this is a Spring MVC/eGovFrame runtime dependency and there is no positive evidence that SpEL-related framework execution is disabled, classify as framework/runtime execution rather than unused.<span class="ev">T1</span><span class="ev">T3</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 8개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-41850&quot;,
+  &quot;severity&quot;: &quot;HIGH&quot;,
+  &quot;epss&quot;: 0.00387,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.8, 6.2.19&quot;,
+  &quot;title&quot;: &quot;spring-framework: Spring Framework: Denial of Service via specially crafted SpEL expressions&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-41851&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00387,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.8, 6.2.19&quot;,
+  &quot;title&quot;: &quot;Spring Framework: Spring Framework: Denial of Service via unbounded cache growth in SpEL evaluation&quot;
+ },
+ &quot;E3&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-41852&quot;,
+  &quot;severity&quot;: &quot;LOW&quot;,
+  &quot;epss&quot;: 0.00177,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.8, 6.2.19&quot;,
+  &quot;title&quot;: &quot;spring-framework: org.springframework/spring-expression: Spring Framework: SpEL vulnerability allows unintended application logic invocation&quot;
+ },
+ &quot;E4&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;org.egovframe.rte:egovframe-rte-ptl-mvc&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E5&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.springframework:spring-expression&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    |    \\--- org.springframework:spring-expression:6.2.11 &lt;- |    +--- org.springframework:spring-webmvc:6.2.11 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T2&quot;: {
+  &quot;tool&quot;: &quot;build_file&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;spring-expression|egovframe-rte-ptl-mvc|spring-boot|springFrameworkVersion|spring-framework&quot;
+  },
+  &quot;result&quot;: [
+   &quot;pom.xml:58:\t\t\t&lt;artifactId&gt;egovframe-rte-ptl-mvc&lt;/artifactId&gt;&quot;
+  ]
+ },
+ &quot;T3&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;org\\.springframework\\.expression|SpelExpressionParser|@Value|@PreAuthorize|@PostAuthorize|@Cacheable|@Scheduled|\\$\\{|#\\{&quot;
+  },
+  &quot;result&quot;: []
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 3건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-41850</td><td>HIGH</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Denial of Service via specially crafted SpEL</td></tr><tr><td>CVE-2026-41851</td><td>MEDIUM</td><td class="num">0.004</td><td>7.0.8, 6.2.19</td><td>남음</td><td>Spring Framework: Spring Framework: Denial of Service via unbounded cache growth</td></tr><tr><td>CVE-2026-41852</td><td>LOW</td><td class="num">0.002</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: org.springframework/spring-expression: Spring Framework: SpEL </td></tr></table></details></div></details>
+<h2>③ 다음 정기 업데이트 <span class="meta">6개 패키지 · 9건</span></h2><p class="meta">실행되지만 남는 취약점이 MEDIUM 이하인 패키지</p><details class="card"><summary><div class="pkg">org.apache.logging.log4j:log4j-core <span class="ver">2.25.3</span></div><div class="badges"><span class="badge sev-MEDIUM">MEDIUM · 4건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · egovframe-rte-ptl-mvc · 최대 EPSS 0.010 · 판정 에이전트 · 묶음 2</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — log4j-core를 2.25.4 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· org.apache.logging.log4j:log4j-core 2.25.3 및 log4j-api 2.25.3은 직접 선언이 아니라 org.egovframe.rte:egovframe-rte-ptl-mvc를 통해 런타임 의존성으로 포함된다.<span class="ev">E6</span><span class="ev">T1</span><span class="ev">T2</span></div><div class="reason">· 애플리케이션 소스는 Log4j API를 직접 import하지 않지만, SLF4J Logger/LoggerFactory를 사용하고 log4j-slf4j2-impl 2.25.3이 런타임 바인딩으로 포함되어 Log4j가 실행될 수 있다.<span class="ev">E7</span><span class="ev">T7</span><span class="ev">T8</span><span class="ev">T10</span></div><div class="reason">· 설정에 log4j2.xml이 있으며 Console Appender와 PatternLayout, AppenderRef가 구성되어 있어 Log4j 설정이 실제 로깅 경로에 사용된다.<span class="ev">T11</span></div><div class="reason">· 설치된 Log4j 2.25.3에는 MEDIUM 취약점이 보고되어 있으며, log4j-api는 2.25.5 또는 2.26.1, log4j-core 관련 취약점은 2.25.4 이상으로 수정된다.<span class="ev">E1</span><span class="ev">E2</span><span class="ev">E3</span><span class="ev">E5</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 12개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-49844&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00595,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.5, 2.26.1&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-api: Apache Log4j API: Malformed JSON output due to improper encoding of floating-point values&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34477&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.0056,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Man-in-the-middle attack due to incomplete hostname verification&quot;
+ },
+ &quot;E3&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34478&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00972,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Log injection via CRLF sequences due to configuration attribute renames&quot;
+ },
+ &quot;E5&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34480&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.01046,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Invalid XML output causes denial of service in logging&quot;
+ },
+ &quot;E6&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;org.egovframe.rte:egovframe-rte-ptl-mvc&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E7&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.apache.logging.log4j:log4j-core&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-core:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T10&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;LoggerFactory|getLogger\\(|LOGGER\\.|log\\.|org\\.slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:19:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:20:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:40:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleExcepHndlr.class);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:49:\t\tLOGGER.debug(\&quot; EgovServiceExceptionHandler run...............\&quot;);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:19:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:20:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:40:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleOthersExcepHndlr.class);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:49:\t\tLOGGER.debug(\&quot; EgovServiceExceptionHandler run...............\&quot;);&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:24:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:25:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:53:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleServiceImpl.class);&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:70:\t\tLOGGER.debug(vo.toString());&quot;,
+   &quot;... 외 1줄&quot;
+  ]
+ },
+ &quot;T11&quot;: {
+  &quot;tool&quot;: &quot;search_config&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;&lt;Console|&lt;File|&lt;RollingFile|&lt;PatternLayout|&lt;JsonLayout|&lt;XmlLayout|&lt;Socket|&lt;Configuration|&lt;Root|&lt;AppenderRef&quot;
+  },
+  &quot;result&quot;: [
+   &quot;log4j2.xml:3:&lt;Configuration&gt;&quot;,
+   &quot;log4j2.xml:5:        &lt;Console name=\&quot;console\&quot; target=\&quot;SYSTEM_OUT\&quot;&gt;&quot;,
+   &quot;log4j2.xml:6:            &lt;PatternLayout pattern=\&quot;%d %5p [%c] %m%n\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:11:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:14:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:17:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:21:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:24:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:26:        &lt;Root level=\&quot;INFO\&quot;&gt;&quot;,
+   &quot;log4j2.xml:27:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;egovframework/sqlmap/example/sql-mapper-config.xml:4:&lt;configuration&gt;&quot;
+  ]
+ },
+ &quot;T2&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.apache.logging.log4j:log4j-api&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    |    \\--- org.apache.logging.log4j:log4j-api:2.25.3 &lt;- |    +--- org.apache.logging.log4j:log4j-core:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T7&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;log4j-slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T8&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    |    \\--- org.slf4j:slf4j-api:2.0.17 &lt;- |    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    +--- org.slf4j:jcl-over-slf4j:2.0.17 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    +--- org.slf4j:log4j-over-slf4j:2.0.17 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 4건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-34480</td><td>MEDIUM</td><td class="num">0.010</td><td>2.25.4</td><td>남음</td><td>org.apache.logging.log4j/log4j-core: Apache Log4j Core: Invalid XML output cause</td></tr><tr><td>CVE-2026-34478</td><td>MEDIUM</td><td class="num">0.010</td><td>2.25.4</td><td>남음</td><td>org.apache.logging.log4j/log4j-core: Apache Log4j Core: Log injection via CRLF s</td></tr><tr><td>CVE-2026-34477</td><td>MEDIUM</td><td class="num">0.006</td><td>2.25.4</td><td>남음</td><td>org.apache.logging.log4j/log4j-core: Apache Log4j Core: Man-in-the-middle attack</td></tr><tr><td>CVE-2026-34479</td><td>MEDIUM</td><td class="num">0.005</td><td>2.25.4</td><td>남음</td><td>org.apache.logging.log4j/log4j-1.2-api: Apache Log4j 1-to-Log4j 2 bridge: Log pr</td></tr></table></details></div></details><details class="card"><summary><div class="pkg">org.apache.logging.log4j:log4j-api <span class="ver">2.25.3</span></div><div class="badges"><span class="badge sev-MEDIUM">MEDIUM · 1건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · egovframe-rte-ptl-mvc · 최대 EPSS 0.006 · 판정 에이전트 · 묶음 2</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — log4j-api를 2.25.5 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· org.apache.logging.log4j:log4j-core 2.25.3 및 log4j-api 2.25.3은 직접 선언이 아니라 org.egovframe.rte:egovframe-rte-ptl-mvc를 통해 런타임 의존성으로 포함된다.<span class="ev">E6</span><span class="ev">T1</span><span class="ev">T2</span></div><div class="reason">· 애플리케이션 소스는 Log4j API를 직접 import하지 않지만, SLF4J Logger/LoggerFactory를 사용하고 log4j-slf4j2-impl 2.25.3이 런타임 바인딩으로 포함되어 Log4j가 실행될 수 있다.<span class="ev">E7</span><span class="ev">T7</span><span class="ev">T8</span><span class="ev">T10</span></div><div class="reason">· 설정에 log4j2.xml이 있으며 Console Appender와 PatternLayout, AppenderRef가 구성되어 있어 Log4j 설정이 실제 로깅 경로에 사용된다.<span class="ev">T11</span></div><div class="reason">· 설치된 Log4j 2.25.3에는 MEDIUM 취약점이 보고되어 있으며, log4j-api는 2.25.5 또는 2.26.1, log4j-core 관련 취약점은 2.25.4 이상으로 수정된다.<span class="ev">E1</span><span class="ev">E2</span><span class="ev">E3</span><span class="ev">E5</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 12개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-49844&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00595,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.5, 2.26.1&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-api: Apache Log4j API: Malformed JSON output due to improper encoding of floating-point values&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34477&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.0056,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Man-in-the-middle attack due to incomplete hostname verification&quot;
+ },
+ &quot;E3&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34478&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00972,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Log injection via CRLF sequences due to configuration attribute renames&quot;
+ },
+ &quot;E5&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-34480&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.01046,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.25.3&quot;,
+  &quot;fixed&quot;: &quot;2.25.4&quot;,
+  &quot;title&quot;: &quot;org.apache.logging.log4j/log4j-core: Apache Log4j Core: Invalid XML output causes denial of service in logging&quot;
+ },
+ &quot;E6&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;org.egovframe.rte:egovframe-rte-ptl-mvc&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E7&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.apache.logging.log4j:log4j-core&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-core:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T10&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;LoggerFactory|getLogger\\(|LOGGER\\.|log\\.|org\\.slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:19:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:20:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:40:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleExcepHndlr.class);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleExcepHndlr.java:49:\t\tLOGGER.debug(\&quot; EgovServiceExceptionHandler run...............\&quot;);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:19:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:20:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:40:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleOthersExcepHndlr.class);&quot;,
+   &quot;java/egovframework/example/cmmn/EgovSampleOthersExcepHndlr.java:49:\t\tLOGGER.debug(\&quot; EgovServiceExceptionHandler run...............\&quot;);&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:24:import org.slf4j.Logger;&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:25:import org.slf4j.LoggerFactory;&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:53:\tprivate static final Logger LOGGER = LoggerFactory.getLogger(EgovSampleServiceImpl.class);&quot;,
+   &quot;java/egovframework/example/sample/service/impl/EgovSampleServiceImpl.java:70:\t\tLOGGER.debug(vo.toString());&quot;,
+   &quot;... 외 1줄&quot;
+  ]
+ },
+ &quot;T11&quot;: {
+  &quot;tool&quot;: &quot;search_config&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;&lt;Console|&lt;File|&lt;RollingFile|&lt;PatternLayout|&lt;JsonLayout|&lt;XmlLayout|&lt;Socket|&lt;Configuration|&lt;Root|&lt;AppenderRef&quot;
+  },
+  &quot;result&quot;: [
+   &quot;log4j2.xml:3:&lt;Configuration&gt;&quot;,
+   &quot;log4j2.xml:5:        &lt;Console name=\&quot;console\&quot; target=\&quot;SYSTEM_OUT\&quot;&gt;&quot;,
+   &quot;log4j2.xml:6:            &lt;PatternLayout pattern=\&quot;%d %5p [%c] %m%n\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:11:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:14:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:17:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:21:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:24:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;log4j2.xml:26:        &lt;Root level=\&quot;INFO\&quot;&gt;&quot;,
+   &quot;log4j2.xml:27:            &lt;AppenderRef ref=\&quot;console\&quot; /&gt;&quot;,
+   &quot;egovframework/sqlmap/example/sql-mapper-config.xml:4:&lt;configuration&gt;&quot;
+  ]
+ },
+ &quot;T2&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.apache.logging.log4j:log4j-api&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    |    \\--- org.apache.logging.log4j:log4j-api:2.25.3 &lt;- |    +--- org.apache.logging.log4j:log4j-core:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T7&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;log4j-slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ },
+ &quot;T8&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;slf4j&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    |    \\--- org.slf4j:slf4j-api:2.0.17 &lt;- |    +--- org.apache.logging.log4j:log4j-slf4j2-impl:2.25.3 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    +--- org.slf4j:jcl-over-slf4j:2.0.17 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;,
+   &quot;|    +--- org.slf4j:log4j-over-slf4j:2.0.17 &lt;- +--- org.egovframe.rte:egovframe-rte-ptl-mvc:5.0.1&quot;
+  ]
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 1건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-49844</td><td>MEDIUM</td><td class="num">0.006</td><td>2.25.5, 2.26.1</td><td>남음</td><td>org.apache.logging.log4j/log4j-api: Apache Log4j API: Malformed JSON output due </td></tr></table></details></div></details><details class="card"><summary><div class="pkg">org.apache.commons:commons-configuration2 <span class="ver">2.11.0</span></div><div class="badges"><span class="badge sev-MEDIUM">MEDIUM · 1건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · egovframe-rte-fdl-property · 최대 EPSS 0.005 · 판정 에이전트</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — commons-configuration2를 2.15.0 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· org.apache.commons:commons-configuration2 2.11.0은 CVE-2026-45205 영향 버전이며 fixed 버전은 2.15.0이다.<span class="ev">E1</span></div><div class="reason">· commons-configuration2는 애플리케이션에 직접 선언된 의존성이 아니라 org.egovframe.rte:egovframe-rte-fdl-property를 통해 들어온 전이 의존성이다.<span class="ev">E2</span><span class="ev">T1</span></div><div class="reason">· 서비스 소스는 commons-configuration2를 직접 import하지 않지만, EgovPropertyService를 주입받아 propertiesService.getInt(...)를 호출하고 런타임 설정에 propertiesService 빈이 EgovPropertyServiceImpl로 등록되어 있어 egovframe property 라이브러리가 런타임에 실행된다.<span class="ev">E3</span><span class="ev">T3</span><span class="ev">T5</span><span class="ev">T7</span></div><div class="reason">· egovframe-rte-fdl-property는 빌드 파일에 직접 선언되어 있으나 commons-configuration2 자체는 직접 버전 고정 선언이 확인되지 않았다.<span class="ev">T2</span><span class="ev">T8</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 9개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-45205&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00469,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;2.11.0&quot;,
+  &quot;fixed&quot;: &quot;2.15.0&quot;,
+  &quot;title&quot;: &quot;commons-configuration: Apache Commons Configuration: Denial of Service via uncontrolled recursion with crafted YAML input&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;org.egovframe.rte:egovframe-rte-fdl-property&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E3&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;commons-configuration2&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.apache.commons:commons-configuration2:2.11.0 &lt;- +--- org.egovframe.rte:egovframe-rte-fdl-property:5.0.1&quot;
+  ]
+ },
+ &quot;T2&quot;: {
+  &quot;tool&quot;: &quot;build_file&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;commons-configuration2|egovframe-rte-fdl-property|commons-configuration|org\\.egovframe\\.rte&quot;
+  },
+  &quot;result&quot;: [
+   &quot;pom.xml:57:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:67:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:71:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:75:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:76:\t\t\t&lt;artifactId&gt;egovframe-rte-fdl-property&lt;/artifactId&gt;&quot;,
+   &quot;pom.xml:79:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;
+  ]
+ },
+ &quot;T3&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;commons\\.configuration2|org\\.apache\\.commons\\.configuration|egovframe\\.rte\\.fdl\\.property|EgovPropertyService|propertiesService|Configuration|YAMLConfiguration|FileBasedConfigurationBuilder|Configurations&quot;
+  },
+  &quot;result&quot;: [
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:20:import org.egovframe.rte.fdl.property.EgovPropertyService;&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:64:\t/** EgovPropertyService */&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:65:\t@Resource(name = \&quot;propertiesService\&quot;)&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:66:\tprivate EgovPropertyService propertiesService;&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:77:\t\t/** EgovPropertyService.sample */&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:78:\t\tsampleVO.setPageUnit(propertiesService.getInt(\&quot;pageUnit\&quot;));&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:79:\t\tsampleVO.setPageSize(propertiesService.getInt(\&quot;pageSize\&quot;));&quot;
+  ]
+ },
+ &quot;T5&quot;: {
+  &quot;tool&quot;: &quot;search_config&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;propertiesService|EgovPropertyService|propertyservice|PropertyService|EgovProperty|propertyConfigurer|configLocation|locations|classpath:.*\\.(properties|ya?ml|xml)&quot;
+  },
+  &quot;result&quot;: [
+   &quot;egovframework/spring/context-mapper.xml:8:\t\t&lt;property name=\&quot;configLocation\&quot; value=\&quot;classpath:/egovframework/sqlmap/example/sql-mapper-config.xml\&quot; /&gt;&quot;,
+   &quot;egovframework/spring/context-mapper.xml:9:\t\t&lt;property name=\&quot;mapperLocations\&quot; value=\&quot;classpath:/egovframework/sqlmap/example/mappers/*.xml\&quot; /&gt;&quot;,
+   &quot;egovframework/spring/context-properties.xml:5:\t&lt;bean name=\&quot;propertiesService\&quot; class=\&quot;org.egovframe.rte.fdl.property.impl.EgovPropertyServiceImpl\&quot; destroy-method=\&quot;destroy\&quot;&gt;&quot;
+  ]
+ },
+ &quot;T7&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;getInt\\(|getString\\(|propertiesService\\.|EgovPropertyService|YAMLConfiguration|Configurations|FileBasedConfigurationBuilder&quot;
+  },
+  &quot;result&quot;: [
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:20:import org.egovframe.rte.fdl.property.EgovPropertyService;&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:64:\t/** EgovPropertyService */&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:66:\tprivate EgovPropertyService propertiesService;&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:77:\t\t/** EgovPropertyService.sample */&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:78:\t\tsampleVO.setPageUnit(propertiesService.getInt(\&quot;pageUnit\&quot;));&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:79:\t\tsampleVO.setPageSize(propertiesService.getInt(\&quot;pageSize\&quot;));&quot;
+  ]
+ },
+ &quot;T8&quot;: {
+  &quot;tool&quot;: &quot;build_file&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;&lt;artifactId&gt;egovframe-rte-fdl-property&lt;/artifactId&gt;|&lt;artifactId&gt;commons-configuration2&lt;/artifactId&gt;|&lt;version&gt;5\\.0\\.1&lt;/version&gt;|&lt;version&gt;2\\.11\\.0&lt;/version&gt;&quot;
+  },
+  &quot;result&quot;: [
+   &quot;pom.xml:23:\t\t&lt;version&gt;5.0.1&lt;/version&gt;&quot;,
+   &quot;pom.xml:76:\t\t\t&lt;artifactId&gt;egovframe-rte-fdl-property&lt;/artifactId&gt;&quot;
+  ]
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 1건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-45205</td><td>MEDIUM</td><td class="num">0.005</td><td>2.15.0</td><td>남음</td><td>commons-configuration: Apache Commons Configuration: Denial of Service via uncon</td></tr></table></details></div></details><details class="card"><summary><div class="pkg">ognl:ognl <span class="ver">3.4.4</span></div><div class="badges"><span class="badge sev-MEDIUM">MEDIUM · 1건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">mybatis-3.5.19.jar 안에 포함(shaded) · 최대 EPSS 0.004 · 판정 에이전트</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — ognl를 3.4.13 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· 취약한 ognl:ognl 3.4.4는 직접 선언되거나 소스에서 직접 import되지 않았지만, mybatis-3.5.19.jar 안에 포함되어 있다.<span class="ev">E1</span><span class="ev">E2</span><span class="ev">E3</span><span class="ev">T1</span><span class="ev">T3</span><span class="ev">T4</span></div><div class="reason">· MyBatis 3.5.19는 egovframe-rte-psl-dataaccess 5.0.1을 통해 런타임 클래스패스에 포함된다.<span class="ev">T2</span></div><div class="reason">· 설정 파일에 MyBatis SqlSessionFactoryBean 및 MyBatis mapper XML이 있고, mapper에서 &lt;if&gt;/&lt;when&gt;의 test 표현식을 사용하므로 MyBatis가 런타임에 OGNL 표현식 평가 기능을 실행할 수 있다.<span class="ev">T5</span></div><div class="reason">· 해당 취약점은 CVE-2026-113730이며 설치 버전은 3.4.4, 수정 버전은 3.4.13이다.<span class="ev">E1</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 8개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-113730&quot;,
+  &quot;severity&quot;: &quot;MEDIUM&quot;,
+  &quot;epss&quot;: 0.00394,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;3.4.4&quot;,
+  &quot;fixed&quot;: &quot;3.4.13&quot;,
+  &quot;title&quot;: &quot;OGNL is an Object Graph Navigation Library for Java. Prior to 3.4.13,  ...&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;dependency_roots&quot;: [],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: &quot;mybatis-3.5.19.jar&quot;
+ },
+ &quot;E3&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;ognl&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T2&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;mybatis&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    +--- org.mybatis:mybatis:3.5.19 &lt;- +--- org.egovframe.rte:egovframe-rte-psl-dataaccess:5.0.1&quot;,
+   &quot;|    +--- org.mybatis:mybatis-spring:3.0.5 &lt;- +--- org.egovframe.rte:egovframe-rte-psl-dataaccess:5.0.1&quot;
+  ]
+ },
+ &quot;T3&quot;: {
+  &quot;tool&quot;: &quot;build_file&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;mybatis|ognl&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T4&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;org\\.apache\\.ibatis|@Mapper\\b|MapperScan|mybatis|ognl&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T5&quot;: {
+  &quot;tool&quot;: &quot;search_config&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;mybatis|ognl|&lt;if\\b|&lt;when\\b|&lt;foreach\\b|&lt;bind\\b|test\\s*=&quot;
+  },
+  &quot;result&quot;: [
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:2:&lt;!DOCTYPE mapper PUBLIC \&quot;-//mybatis.org//DTD Mapper 3.0//EN\&quot; \&quot;http://mybatis.org/dtd/mybatis-3-mapper.dtd\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:62:\t\t\t&lt;if test=\&quot;searchKeyword != null and searchKeyword != &#x27;&#x27;\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:64:\t\t            &lt;when test=\&quot;searchCondition == 0\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:67:\t\t            &lt;when test=\&quot;searchCondition == 1\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:81:\t\t\t&lt;if test=\&quot;searchKeyword != null and searchKeyword != &#x27;&#x27;\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:83:\t\t            &lt;when test=\&quot;searchCondition == 0\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/mappers/EgovSample_Sample_SQL.xml:86:\t\t            &lt;when test=\&quot;searchCondition == 1\&quot;&gt;&quot;,
+   &quot;egovframework/sqlmap/example/sql-mapper-config.xml:2:&lt;!DOCTYPE configuration PUBLIC \&quot;-//mybatis.org//DTD Config 3.0//EN\&quot; \&quot;http://mybatis.org/dtd/mybatis-3-config.dtd\&quot;&gt;&quot;,
+   &quot;egovframework/spring/context-mapper.xml:5:\t&lt;!-- SqlSession setup for MyBatis Database Layer --&gt;&quot;,
+   &quot;egovframework/spring/context-mapper.xml:6:\t&lt;bean id=\&quot;sqlSession\&quot; class=\&quot;org.mybatis.spring.SqlSessionFactoryBean\&quot;&gt;&quot;,
+   &quot;egovframework/spring/context-mapper.xml:12:\t&lt;!-- MapperConfigurer setup for MyBatis Database Layer with @Mapper(\&quot;deptMapper\&quot;) in DeptMapper Interface --&gt;&quot;
+  ]
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 1건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-113730</td><td>MEDIUM</td><td class="num">0.004</td><td>3.4.13</td><td>남음</td><td>OGNL is an Object Graph Navigation Library for Java. Prior to 3.4.13,  ...</td></tr></table></details></div></details><details class="card"><summary><div class="pkg">org.springframework:spring-web <span class="ver">6.2.11</span></div><div class="badges"><span class="badge sev-MEDIUM">MEDIUM · 1건</span><span class="badge cat-a">A 코드가 직접 사용</span></div><div class="sub">전이 의존성 · egovframe-rte-fdl-property · 최대 EPSS 0.001 · 판정 규칙</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — spring-web를 6.2.19 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· 소스가 org.springframework.web.bind, org.springframework.web.bind.annotation, org.springframework.web.bind.support import<span class="ev">reach</span></div><details><summary class="meta" style="cursor:pointer">취약점 1건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-41854</td><td>MEDIUM</td><td class="num">0.001</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Server-Side Request Forgery via incorrect ho</td></tr></table></details></div></details><details class="card"><summary><div class="pkg">org.springframework:spring-core <span class="ver">6.2.11</span></div><div class="badges"><span class="badge sev-LOW">LOW · 1건</span><span class="badge cat-b">B 프레임워크가 실행</span></div><div class="sub">전이 의존성 · 경로 불명(Maven 버전 조정) · 최대 EPSS 0.003 · 판정 에이전트</div></summary><div class="body"><div class="fix"><b>조치</b> Boot 관리 대상 아님 — spring-core를 6.2.19 이상으로 의존성 제약(constraint) 추가</div><div class="reason">· 취약 패키지 org.springframework:spring-core 6.2.11에 CVE-2026-41848가 보고되었고, 고정 버전은 6.2.19 또는 7.0.8이다.<span class="ev">E1</span></div><div class="reason">· 애플리케이션 소스에서 spring-core 또는 AntPathMatcher/PathMatcher 관련 API를 직접 import·사용한 흔적은 확인되지 않아 직접 사용(A)으로 보기는 어렵다.<span class="ev">E3</span><span class="ev">T3</span></div><div class="reason">· 다만 프로젝트는 eGovFrame MVC 의존성을 사용하고 컨트롤러가 존재하므로, 소스가 직접 호출하지 않아도 Spring MVC/eGovFrame 런타임의 요청 매핑·경로 매칭 과정에서 Spring Framework 기능이 실행될 수 있다.<span class="ev">T6</span><span class="ev">T8</span></div><div class="reason">· spring-core는 직접 선언된 의존성이 아니라 런타임 클래스패스에 포함된 전이/관리 의존성으로 확인된다.<span class="ev">E2</span><span class="ev">T1</span></div><details><summary class="meta" style="cursor:pointer">인용된 근거 원문 7개</summary><pre>{
+ &quot;E1&quot;: {
+  &quot;cve&quot;: &quot;CVE-2026-41848&quot;,
+  &quot;severity&quot;: &quot;LOW&quot;,
+  &quot;epss&quot;: 0.00335,
+  &quot;kev&quot;: false,
+  &quot;installed&quot;: &quot;6.2.11&quot;,
+  &quot;fixed&quot;: &quot;7.0.8, 6.2.19&quot;,
+  &quot;title&quot;: &quot;spring-framework: Spring Framework: Regular Expression Denial of Service in AntPathMatcher&quot;
+ },
+ &quot;E2&quot;: {
+  &quot;dependency_roots&quot;: [
+   &quot;maven-mediated:scope-promoted-path-unknown&quot;
+  ],
+  &quot;declared_directly&quot;: false,
+  &quot;embedded_in_jar&quot;: null
+ },
+ &quot;E3&quot;: {
+  &quot;source_files_importing&quot;: [],
+  &quot;imported_packages&quot;: []
+ },
+ &quot;T1&quot;: {
+  &quot;tool&quot;: &quot;dependency_path&quot;,
+  &quot;args&quot;: {
+   &quot;artifact&quot;: &quot;org.springframework:spring-core&quot;
+  },
+  &quot;result&quot;: [
+   &quot;|    \\--- org.springframework:spring-core:6.2.11 &lt;- +--- maven-mediated:scope-promoted-path-unknown:0&quot;
+  ]
+ },
+ &quot;T3&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;AntPathMatcher|PathMatcher|PathPatternParser|PathMatchConfigurer|setPathMatcher|getPathMatcher|org\\.springframework\\.util&quot;
+  },
+  &quot;result&quot;: []
+ },
+ &quot;T6&quot;: {
+  &quot;tool&quot;: &quot;search_source&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;@Controller|@RestController|@RequestMapping|RouterFunction|WebMvcConfigurer|EnableWebMvc|DispatcherServlet|HandlerMapping&quot;
+  },
+  &quot;result&quot;: [
+   &quot;java/egovframework/example/cmmn/web/EgovBindingInitializer.java:44:@ControllerAdvice&quot;,
+   &quot;java/egovframework/example/sample/web/EgovSampleController.java:56:@Controller&quot;
+  ]
+ },
+ &quot;T8&quot;: {
+  &quot;tool&quot;: &quot;build_file&quot;,
+  &quot;args&quot;: {
+   &quot;pattern&quot;: &quot;&lt;parent&gt;|&lt;/parent&gt;|&lt;artifactId&gt;|&lt;version&gt;|spring-core|spring-framework|spring-context|spring-webmvc|spring-web|egovframe-web-parent|org\\.egovframe\\.web|org\\.egovframe\\.rte&quot;
+  },
+  &quot;result&quot;: [
+   &quot;pom.xml:6:\t&lt;artifactId&gt;egovframe-web&lt;/artifactId&gt;&quot;,
+   &quot;pom.xml:7:\t&lt;version&gt;5.0.0&lt;/version&gt;&quot;,
+   &quot;pom.xml:20:\t&lt;parent&gt;&quot;,
+   &quot;pom.xml:21:\t\t&lt;groupId&gt;org.egovframe.web&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:22:\t\t&lt;artifactId&gt;egovframe-web-config-parent&lt;/artifactId&gt;&quot;,
+   &quot;pom.xml:23:\t\t&lt;version&gt;5.0.1&lt;/version&gt;&quot;,
+   &quot;pom.xml:24:\t&lt;/parent&gt;&quot;,
+   &quot;pom.xml:57:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:58:\t\t\t&lt;artifactId&gt;egovframe-rte-ptl-mvc&lt;/artifactId&gt;&quot;,
+   &quot;pom.xml:61:\t\t\t\t\t&lt;artifactId&gt;commons-logging&lt;/artifactId&gt;&quot;,
+   &quot;pom.xml:67:\t\t\t&lt;groupId&gt;org.egovframe.rte&lt;/groupId&gt;&quot;,
+   &quot;pom.xml:68:\t\t\t&lt;artifactId&gt;egovframe-rte-psl-dataaccess&lt;/artifactId&gt;&quot;,
+   &quot;... 외 31줄&quot;
+  ]
+ }
+}</pre></details><details><summary class="meta" style="cursor:pointer">취약점 1건 보기</summary><table><tr><th>ID</th><th>등급</th><th>EPSS</th><th>수정 버전</th><th>Boot 패치 후</th><th>내용</th></tr><tr><td>CVE-2026-41848</td><td>LOW</td><td class="num">0.003</td><td>7.0.8, 6.2.19</td><td>남음</td><td>spring-framework: Spring Framework: Regular Expression Denial of Service in AntP</td></tr></table></details></div></details>
+<h2>실행 안 됨 <span class="meta">0개 패키지 · 0건</span></h2><p class="meta">설정·구조상 취약 기능이 실행되지 않는다고 판단한 패키지 — 근거를 함께 확인하세요</p><p class="empty">해당 없음</p>
+
+<footer>사실(SBOM·CVE·EPSS·KEV·의존성 경로·소스/설정 검색)은 도구가, 실행 여부 판단은 에이전트가, 근거 인용 검증과 조치·우선순위 계산은 규칙이 담당합니다.
+검증을 통과하지 못한 판정은 자동으로 "실행됨"으로 되돌립니다. "Boot 패치 후"는 Spring Boot BOM 대조로 계산한 예측이며,
+업그레이드 과정에서 바뀌는 전이 의존성(예: 다른 좌표로 교체된 라이브러리)은 반영되지 않으므로 패치 후 재스캔으로 확인하세요.
+판정 A=코드가 직접 사용 · B=프레임워크가 실행 · C=실행 안 됨.</footer>
+</main></body></html>

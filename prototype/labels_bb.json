@@ -1,0 +1,96 @@
+{
+  "_note": "LLM 실행 전에 사람이 고정한 정답 라벨 (2026-10-29). A=코드가 직접 사용, B=프레임워크/라이브러리가 대신 실행, C=설정·구조상 취약 기능이 꺼져 있음. accept에 여러 개면 애매한 건이라 둘 다 정답 처리",
+  "com.fasterxml.jackson.core:jackson-databind": {
+    "accept": [
+      "A"
+    ],
+    "why": "ObjectMapper 등 databind 직접 import 5파일"
+  },
+  "com.fasterxml.jackson.core:jackson-core": {
+    "accept": [
+      "A"
+    ],
+    "why": "jackson.core / core.type 직접 import"
+  },
+  "org.redisson:redisson": {
+    "accept": [
+      "A"
+    ],
+    "why": "org.redisson.api 직접 사용, 3.17.0 직접 고정"
+  },
+  "org.springframework:spring-webflux": {
+    "accept": [
+      "A"
+    ],
+    "why": "WebClient 직접 사용"
+  },
+  "org.springframework:spring-webmvc": {
+    "accept": [
+      "A",
+      "B"
+    ],
+    "why": "SseEmitter 등 직접 import + DispatcherServlet이 매 요청 실행"
+  },
+  "org.apache.tomcat.embed:tomcat-embed-core": {
+    "accept": [
+      "B"
+    ],
+    "why": "import는 jakarta.servlet 인터페이스뿐, 내장 서버로 매 요청 실행"
+  },
+  "io.netty:netty-codec-http": {
+    "accept": [
+      "B"
+    ],
+    "why": "WebClient(reactor-netty)·S3 SDK가 사용"
+  },
+  "io.netty:netty-codec-http2": {
+    "accept": [
+      "B"
+    ],
+    "why": "WebClient·S3 SDK 경유"
+  },
+  "io.netty:netty-handler": {
+    "accept": [
+      "B"
+    ],
+    "why": "redis 클라이언트·WebClient·S3 경유"
+  },
+  "io.netty:netty-codec": {
+    "accept": [
+      "B",
+      "C"
+    ],
+    "why": "[2026-10-29 라벨 수정 — gpt-5.5 v2 판정을 보고 재검토] 해당 CVE-2026-59901은 bzip2 디코더 한정. Bzip2 클래스는 netty-codec jar 안에 있으나, BOOT-INF/lib 전체 jar 바이트코드에서 Bzip2Decoder를 참조하는 건 netty-codec 자신뿐(소스도 미사용) → C 가능. 패키지 단위로는 B라 둘 다 인정"
+  },
+  "io.netty:netty-codec-dns": {
+    "accept": [
+      "B"
+    ],
+    "why": "reactor-netty DNS resolver"
+  },
+  "at.yawk.lz4:lz4-java": {
+    "accept": [
+      "C"
+    ],
+    "why": "spring-kafka 압축 코덱, compression 설정 없음(기본 none)"
+  },
+  "org.xerial.snappy:snappy-java": {
+    "accept": [
+      "C"
+    ],
+    "why": "spring-kafka 압축 코덱, compression 설정 없음"
+  },
+  "org.apache.commons:commons-lang3": {
+    "accept": [
+      "C"
+    ],
+    "why": "springdoc 경유, prod에서 springdoc api-docs/swagger-ui enabled: false"
+  },
+  "org.apache.logging.log4j:log4j-api": {
+    "accept": [
+      "B",
+      "C"
+    ],
+    "why": "log4j-to-slf4j 브리지로만 존재, CVE는 JSON 출력 관련이라 해당 경로 사용 여부 애매"
+  }
+}

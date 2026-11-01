@@ -1,0 +1,23 @@
+{
+  "_note": "세 번째 레포(NBE7-9-2-Team3 backend, main) 진짜 held-out 라벨 — v2 프롬프트 확정 후, LLM 실행 전에 고정 (2026-10-29)",
+  "org.springframework:spring-web": {"accept": ["A", "B"], "why": "직접 import 32파일"},
+  "org.springframework.security:spring-security-core": {"accept": ["A", "B"], "why": "직접 import 22파일"},
+  "org.springframework.data:spring-data-commons": {"accept": ["A", "B"], "why": "Pageable 등 직접 import 17파일"},
+  "org.apache.tomcat.embed:tomcat-embed-core": {"accept": ["B"], "why": "jakarta.servlet 인터페이스만 import, 내장 서버로 매 요청 실행"},
+  "org.springframework:spring-webmvc": {"accept": ["A", "B"], "why": "WebMvcConfigurer import + DispatcherServlet"},
+  "org.springframework.boot:spring-boot": {"accept": ["A", "B"], "why": "SpringApplication 등"},
+  "org.springframework.security:spring-security-web": {"accept": ["A", "B"], "why": "필터 체인 직접 구성"},
+  "org.springframework:spring-websocket": {"accept": ["A", "B"], "why": "WebSocket 설정 직접 구성"},
+  "org.springframework.boot:spring-boot-autoconfigure": {"accept": ["A", "B"], "why": "자동구성"},
+  "org.springframework:spring-core": {"accept": ["A", "B"], "why": "프레임워크 핵심"},
+  "com.fasterxml.jackson.core:jackson-databind": {"accept": ["B"], "why": "직접 선언했지만 import 0, Spring MVC 메시지 컨버터가 매 요청 사용"},
+  "com.fasterxml.jackson.core:jackson-core": {"accept": ["B"], "why": "databind가 사용"},
+  "ch.qos.logback:logback-core": {"accept": ["B"], "why": "기본 로깅 구현, 항상 실행"},
+  "org.springframework:spring-expression": {"accept": ["B"], "why": "Spring/Security 내부 SpEL"},
+  "org.apache.commons:commons-lang3": {"accept": ["B"], "why": "springdoc 경유, 이 레포는 prod 프로파일·enabled:false 없음 → Swagger 활성(기본값 true) → 실행됨. BB와 반대 케이스"},
+  "org.apache.logging.log4j:log4j-api": {"accept": ["B", "C"], "why": "log4j-to-slf4j 브리지로만 존재 (BB·WE와 같은 애매 건)"},
+  "io.netty:netty-codec-http": {"accept": ["C"], "why": "AWS SDK s3 경유만. 소스는 동기 S3Client·S3Presigner만 사용 → 동기 클라이언트는 apache-client 사용, netty-nio-client는 비동기(S3AsyncClient) 전용 → 실행 안 됨"},
+  "io.netty:netty-codec-http2": {"accept": ["C"], "why": "위와 같음"},
+  "io.netty:netty-handler": {"accept": ["C"], "why": "위와 같음"},
+  "io.netty:netty-codec": {"accept": ["C"], "why": "위와 같음"}
+}

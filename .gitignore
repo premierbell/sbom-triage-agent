@@ -1,0 +1,15 @@
+# 분석 대상 코드 복사본·스캔 결과 (팀 레포·외부 레포 포함) — 공개하지 않음
+work/
+scans/
+runs/
+# 제출 원문·초안·개발 중 원본 기록 — 공개용은 docs/experiment-log.md
+docs/_old/
+docs/01_기획안.md
+docs/02_실측기록.md
+docs/03_*
+docs/04_*
+docs/05_*
+docs/06_*
+__pycache__/
+.pytest_cache/
+.DS_Store

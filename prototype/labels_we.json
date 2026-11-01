@@ -1,0 +1,10 @@
+{
+  "_note": "검증용(held-out) 라벨 — 프롬프트 수정 전에 고정 (2026-10-29). World Engine server",
+  "org.jsoup:jsoup": {"accept": ["A"], "why": "직접 선언 + org.jsoup 직접 import 6파일"},
+  "tools.jackson.core:jackson-databind": {"accept": ["A"], "why": "tools.jackson.databind 직접 import"},
+  "org.apache.tomcat.embed:tomcat-embed-core": {"accept": ["B"], "why": "내장 서버, import 없음"},
+  "org.springframework:spring-webmvc": {"accept": ["B"], "why": "import 없음, DispatcherServlet이 매 요청 실행"},
+  "tools.jackson.core:jackson-core": {"accept": ["B"], "why": "직접 import 없음, databind가 런타임 사용"},
+  "org.apache.logging.log4j:log4j-api": {"accept": ["B", "C"], "why": "log4j-to-slf4j 브리지로만 존재 (BB와 같은 애매 건)"},
+  "org.postgresql:postgresql": {"accept": ["A", "B"], "why": "직접 선언(runtimeOnly), 코드 import는 없지만 JPA가 매 쿼리 사용"}
+}
