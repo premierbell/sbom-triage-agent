@@ -383,3 +383,32 @@
 - 리포트 "지금 조치" 84 → **75** (공격 조건 미충족 9건 제외 표시)
 - **정답 라벨 없음** — 9건 모두 공개된 CVE 설명·Spring Boot 기본 동작 지식과 대조해 타당하다고 검토한 수준. 정확도 수치로 주장하지 않음
 - 테스트 3개 추가(원문 없는 인용 무효, 근거 없는 미충족 무효, 모든 시나리오 차단 필요 + 완화 요인 무시) → 총 13개 통과
+
+## 2026-11-01 보강 B — 처음 보는 레포 2개로 규칙 재검증
+
+### 순서
+1. 아직 한 번도 분석하지 않은 본인 프로젝트에서 의존성 구성이 다른 3개 선택: notification-platform/backend(Boot 4.1.0, Kafka·Redis·Mail), p-251031-2/backend(Boot 3.5.6, springdoc·Security·OAuth2), jsoup(Maven) → **jsoup은 프로젝트 자체 빌드 실패**(main 클래스 2개로 Boot repackage 불가)라 제외
+2. 규칙만으로 분석하되 **판정은 출력하지 않고 사실(도입 경로·import·직접 선언)만** 봄
+3. 코드·설정을 직접 확인해 라벨 고정 (`labels_h_notification.json` 10건, `labels_h_p31.json` 16건) — 규칙 4개가 이미 구현된 뒤지만 이 레포들은 규칙 설계 때 본 적 없음
+   - notification: 같은 서비스가 KafkaTemplate으로 보내고 @KafkaListener로 받음, compression 설정 없음 → lz4·snappy C / StringRedisTemplate 실사용 → netty-handler B
+   - p31: springdoc 끄는 설정 없음 → commons-lang3 B / Kakao OAuth2만, scope에 openid 없음 → oauth2-jose(JWT 검증 CVE) B/C 애매
+4. 채점 → LLM 3회
+
+### Evidence — 규칙만 (LLM 0)
+- 두 레포에서 규칙이 판정한 21건 **전부 라벨과 일치** (Boot 4의 Jackson 3 좌표, Kafka 코덱 C 2건, Swagger 켜짐 B 포함)
+
+### 발견: Gradle 트리 접힘(`(*)`) 때문에 "모든 경로가 X를 거친다" 검사가 틀릴 수 있었음
+- p31에서 logback-core·log4j-api를 **Swagger 규칙**이 판정 — 트리 문자열에선 springdoc 아래에만 보였기 때문. 실제로는 starter-web 경로로도 들어오지만 Gradle이 두 번째 등장부터 `(*)`로 하위를 생략
+- 이번엔 Swagger가 켜져 있어 결론(B)이 맞았지만, **Swagger를 끈 서비스였다면 logback을 "실행 안 됨"으로 내렸을 것** — 위험한 오판이 가능한 구조. AWS·Kafka 규칙의 경로 검사도 같은 약점
+- 수정: 트리를 **의존성 그래프**로 만들고(`(*)` 노드는 처음 펼쳐진 곳의 자식 공유), "X를 빼고도 루트에서 도달 가능한가"로 판정. Maven 트리는 중복을 아예 지워 다른 경로를 알 수 없으므로 **Maven에서는 C 규칙을 끄고** 에이전트에게 넘김
+- 재채점: p31 logback은 프레임워크 핵심 규칙(B)으로, log4j-api는 에이전트로 넘어감. 기존 C 판정 11건(BB·Team3·Team4·notification)은 그래프로 다시 계산해도 그대로 — 8개 레포 규칙 판정 전부 라벨 일치
+- 회귀 테스트 2개 추가 (접힘에 숨은 경로 재현, Maven 트리에서 C 규칙 끔) → 총 15개, 경고 0
+
+### Evidence — 규칙(그래프 수정 후) + 에이전트, gpt-5.5, 각 3회
+| 레포 | 회차별 일치 | 위험한 오판 | 검증 실패 폴백 | 1회 비용·시간 |
+|---|---|---|---|---|
+| notification-platform (10) | **10, 10, 10** | 0 | 0 | $0.13~0.18, 24~36초 |
+| p-251031-2 (16) | **16, 16, 16** | 0 | 0 | $0.35~0.41, 34~46초 |
+- 회차별로 갈린 판정은 oauth2-jose 하나(C, B, B — 라벨상 B/C 모두 허용한 애매 건)
+- **해석**: 26건 중 회차당 에이전트가 판단한 건 3~4건(Redis 경로 netty-handler·codec-dns, log4j-api, webmvc, oauth2-jose, spring-core), 나머지는 규칙. 즉 이번 검증의 주 대상은 **규칙**이고, 에이전트 몫도 전부 맞았지만 표본이 작음
+- 누적 held-out(규칙 설계 때 안 본 레포): Team4 21/21×3(규칙 2개 시점), notification 10/10×3·p31 16/16×3(규칙 4개 + 그래프 수정 시점)

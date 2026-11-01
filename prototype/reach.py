@@ -16,7 +16,7 @@ def parse_deptree(path):
     """artifact(group:name) -> 그 artifact로 이어지는 직접 의존성(최상위) 집합."""
     roots = collections.defaultdict(set)
     stack = []
-    for line in open(path):
+    for line in pathlib.Path(path).read_text().splitlines():
         m = LINE.match(line)
         if not m:
             continue

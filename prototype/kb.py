@@ -14,20 +14,59 @@ KAFKA_CODECS = {"org.lz4:lz4-java", "at.yawk.lz4:lz4-java", "org.xerial.snappy:s
 KAFKA_COMPRESSION = r"compression[._-]?type|compressionType|COMPRESSION_TYPE"
 
 
+TREE_LINE = re.compile(r"^([| ]*)[+\\]--- (\S+)")
+
+
 def chains(deptree_lines, package):
     return judge.dependency_path(deptree_lines, package)
 
 
-def all_through(paths, artifact):
-    return bool(paths) and all(artifact in p for p in paths)
+def graph(deptree_lines):
+    """Gradle 트리 → (루트 집합, 자식 그래프). `(*)`로 접힌 중복 노드도 처음 펼쳐진 곳의 자식을 공유하게 된다."""
+    roots, children, stack = set(), {}, []
+    for line in deptree_lines:
+        m = TREE_LINE.match(line)
+        if not m:
+            continue
+        depth = len(m.group(1)) // 5
+        node = ":".join(m.group(2).split(":")[:2])
+        stack = stack[:depth] + [node]
+        if depth == 0:
+            roots.add(node)
+        else:
+            children.setdefault(stack[depth - 1], set()).add(node)
+    return roots, children
+
+
+def can_verify_all_paths(deptree_lines):
+    """Gradle 트리는 중복을 `(*)`로 표시해 모든 경로를 복원할 수 있다. Maven 트리는 중복을 아예 지워서 불가."""
+    return any("(*)" in line for line in deptree_lines)
+
+
+def all_through(deptree_lines, package, carrier_prefix):
+    """루트에서 package까지 가는 모든 경로가 carrier_prefix로 시작하는 노드를 거치는가 (거치지 않는 경로가 하나라도 있으면 False)."""
+    roots, children = graph(deptree_lines)
+    blocked = lambda n: n.startswith(carrier_prefix)  # noqa: E731
+    seen, todo = set(), [r for r in roots if not blocked(r)]
+    while todo:
+        node = todo.pop()
+        if node == package:
+            return False
+        if node in seen:
+            continue
+        seen.add(node)
+        todo.extend(c for c in children.get(node, ()) if not blocked(c))
+    # carrier 없이는 도달 불가. 단 package가 트리에 아예 없으면 판단하지 않는다
+    return any(package in kids for kids in children.values()) or package in roots
 
 
 def aws_sync_only_netty(row, deptree_lines, repo):
     if not row["package"].startswith("io.netty:"):
         return None
-    paths = chains(deptree_lines, row["package"])
-    if not all_through(paths, "software.amazon.awssdk:netty-nio-client"):
+    if not can_verify_all_paths(deptree_lines) or \
+            not all_through(deptree_lines, row["package"], "software.amazon.awssdk:netty-nio-client"):
         return None
+    paths = chains(deptree_lines, row["package"])
     async_hits = judge.grep(AWS_ASYNC, f"{repo}/src/main", 12, include=("*.java", "*.kt"))
     if async_hits:
         return None
@@ -47,9 +86,10 @@ def aws_sync_only_netty(row, deptree_lines, repo):
 def kafka_uncompressed_codec(row, deptree_lines, repo):
     if row["package"] not in KAFKA_CODECS:
         return None
-    paths = chains(deptree_lines, row["package"])
-    if not all_through(paths, "org.apache.kafka:kafka-clients"):
+    if not can_verify_all_paths(deptree_lines) or \
+            not all_through(deptree_lines, row["package"], "org.apache.kafka:kafka-clients"):
         return None
+    paths = chains(deptree_lines, row["package"])
     config_hits = judge.grep(KAFKA_COMPRESSION, f"{repo}/src/main/resources", 12, include=judge.CONFIG_FILES)
     source_hits = judge.grep(KAFKA_COMPRESSION, f"{repo}/src/main", 12, include=("*.java", "*.kt"))
     if config_hits or source_hits:
@@ -121,14 +161,17 @@ def config_values(resources):
 
 def springdoc_disabled(row, deptree_lines, repo):
     paths = chains(deptree_lines, row["package"])
-    if not paths or not all("org.springdoc:" in p for p in paths):
+    if not paths or not all_through(deptree_lines, row["package"], "org.springdoc:"):
         return None
+    c_allowed = can_verify_all_paths(deptree_lines)  # Maven 트리면 다른 경로를 확인할 수 없어 C로 내리지 않는다
     configs = config_values(f"{repo}/src/main/resources")
     disabled = [name for name, values in configs.items()
                 if values.get("springdoc.api-docs.enabled", "").lower() == "false"]
     effective = [n for n in disabled if n in ("application.yml", "application.yaml", "application.properties") or "prod" in n]
     evidence = {"deptree": paths, "config": {n: {k: v for k, v in vals.items() if k.startswith("springdoc")}
                                              for n, vals in configs.items()}}
+    if effective and not c_allowed:
+        return None
     if effective:
         return {
             "category": "C", "decided_by": "rule:kb-springdoc",

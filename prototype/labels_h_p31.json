@@ -1,0 +1,109 @@
+{
+ "_note": "다섯·여섯 번째 레포 held-out 라벨 — 규칙 4개 구현 이후, 규칙 판정·LLM 판정을 보기 전에 사실(도입 경로·import·설정)만 보고 고정 (2026-11-01). jsoup 연습 프로젝트는 빌드 실패(main 클래스 2개)로 제외",
+ "org.springframework:spring-web": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "직접 import"
+ },
+ "org.apache.tomcat.embed:tomcat-embed-core": {
+  "accept": [
+   "B"
+  ],
+  "why": "jakarta.servlet 인터페이스만 import, 내장 서버"
+ },
+ "org.springframework.security:spring-security-core": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "직접 import"
+ },
+ "org.springframework.security:spring-security-web": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "직접 import"
+ },
+ "org.springframework.data:spring-data-commons": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "직접 import"
+ },
+ "org.springframework.boot:spring-boot": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "SpringApplication"
+ },
+ "org.springframework.boot:spring-boot-autoconfigure": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "자동구성"
+ },
+ "org.springframework:spring-webmvc": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "import 없지만 DispatcherServlet이 매 요청 실행"
+ },
+ "com.fasterxml.jackson.core:jackson-databind": {
+  "accept": [
+   "B"
+  ],
+  "why": "MVC 메시지 컨버터"
+ },
+ "ch.qos.logback:logback-core": {
+  "accept": [
+   "B"
+  ],
+  "why": "기본 로깅"
+ },
+ "com.fasterxml.jackson.core:jackson-core": {
+  "accept": [
+   "B"
+  ],
+  "why": "databind가 사용"
+ },
+ "org.springframework:spring-expression": {
+  "accept": [
+   "B"
+  ],
+  "why": "Spring/Security 내부 SpEL"
+ },
+ "org.apache.commons:commons-lang3": {
+  "accept": [
+   "B"
+  ],
+  "why": "springdoc 경유만, 끄는 설정 없음(default-produces-media-type만) → Swagger 활성"
+ },
+ "org.apache.logging.log4j:log4j-api": {
+  "accept": [
+   "B",
+   "C"
+  ],
+  "why": "log4j-to-slf4j 브리지로만 존재"
+ },
+ "org.springframework.security:spring-security-oauth2-jose": {
+  "accept": [
+   "B",
+   "C"
+  ],
+  "why": "CVE는 JWT 검증 관련. Kakao OAuth2만 등록, scope에 openid 없음 → OIDC ID 토큰 검증 경로 미사용 가능성. 자동구성은 로드되어 애매"
+ },
+ "org.springframework:spring-core": {
+  "accept": [
+   "A",
+   "B"
+  ],
+  "why": "프레임워크 핵심"
+ }
+}

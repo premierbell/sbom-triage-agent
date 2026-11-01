@@ -19,9 +19,11 @@ GRADLE_TREE = """\
 +--- software.amazon.awssdk:s3 -> 2.20.26
 |    \\--- software.amazon.awssdk:netty-nio-client:2.20.26
 |         \\--- io.netty:netty-codec-http:4.1.127.Final
-\\--- org.springframework.boot:spring-boot-starter-data-redis -> 3.5.16
-     \\--- io.lettuce:lettuce-core:6.5.5
-          \\--- io.netty:netty-handler:4.1.127.Final
+\+--- org.springframework.boot:spring-boot-starter-data-redis -> 3.5.16
+|    \\--- io.lettuce:lettuce-core:6.5.5
+|         \\--- io.netty:netty-handler:4.1.127.Final
+\\--- org.springframework.boot:spring-boot-starter-validation -> 3.5.16
+     \\--- org.springframework.boot:spring-boot-starter-json:3.5.16 (*)
 """
 
 
@@ -122,7 +124,8 @@ def test_aws_sync_rule_backs_off_on_async_usage(tmp_path):
 
 def test_springdoc_rule_reads_disabled_flag(tmp_path):
     tree = ["+--- org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13",
-            "|    \\--- org.apache.commons:commons-lang3:3.17.0"]
+            "|    \\--- org.apache.commons:commons-lang3:3.17.0",
+            "\\--- org.springframework.boot:spring-boot-starter-web -> 3.5.6 (*)"]
     off = make_repo(tmp_path / "off", config="springdoc:\n  api-docs:\n    enabled: false\n")
     on = make_repo(tmp_path / "on", config="springdoc:\n  swagger-ui:\n    path: /swagger-ui.html\n")
     pkg = row("org.apache.commons:commons-lang3", [])
@@ -193,3 +196,28 @@ def test_conditions_every_scenario_must_be_blocked_and_mitigations_ignored():
     ], "mitigations": [cond("the firewall is in use", "not_met", ["T1"])], "verdict": "not_exploitable"}
     conditions.validate(result, DESC, {"T1": "search_config"})
     assert result["verdict"] == "exploitable"  # 시나리오 B가 막히지 않았고, 완화 요인은 판정에 쓰지 않는다
+
+
+def test_springdoc_rule_sees_paths_hidden_by_gradle_elision(tmp_path):
+    """실제로 발견한 함정: logback이 트리 문자열에선 springdoc 아래에만 보이지만, starter-web 쪽 경로는 (*)로 접혀 있었다.
+    Swagger를 끈 서비스에서 logback을 '실행 안 됨'으로 내리면 위험한 오판이 된다."""
+    tree = [
+        "+--- org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13",
+        "|    \\--- org.springframework.boot:spring-boot-starter:3.5.6",
+        "|         \\--- org.springframework.boot:spring-boot-starter-logging:3.5.6",
+        "|              \\--- ch.qos.logback:logback-core:1.5.18",
+        "\\--- org.springframework.boot:spring-boot-starter-web -> 3.5.6",
+        "     \\--- org.springframework.boot:spring-boot-starter:3.5.6 (*)",
+    ]
+    repo = make_repo(tmp_path, config="springdoc:\n  api-docs:\n    enabled: false\n")
+    assert kb.all_through(tree, "ch.qos.logback:logback-core", "org.springdoc:") is False
+    assert kb.springdoc_disabled(row("ch.qos.logback:logback-core", []), tree, repo) is None
+
+
+def test_c_rules_off_for_maven_trees_without_elision_markers(tmp_path):
+    """Maven 트리는 중복을 지워서 다른 경로를 확인할 수 없으므로 '실행 안 됨' 규칙을 적용하지 않는다."""
+    tree = ["+--- org.springframework.kafka:spring-kafka:3.3.16",
+            "|    \\--- org.apache.kafka:kafka-clients:3.9.2",
+            "|         \\--- org.xerial.snappy:snappy-java:1.1.10.7"]
+    repo = make_repo(tmp_path)
+    assert kb.kafka_uncompressed_codec(row("org.xerial.snappy:snappy-java", []), tree, repo) is None
