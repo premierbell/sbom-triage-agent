@@ -16,6 +16,7 @@ import time
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
 import actions  # noqa: E402
 import buildtool  # noqa: E402
+import conditions  # noqa: E402
 import enrich  # noqa: E402
 import judge  # noqa: E402
 import kb  # noqa: E402
@@ -133,6 +134,13 @@ def main():
                                 str(module), args.model, usage)
     usage["usd"] = round(judge.cost(args.model, usage), 4) if usage["calls"] else 0.0
 
+    cond_results = {}
+    if not args.no_llm and conditions.targets(vulns, results):
+        step(f"공격 조건 분석 (KEV 또는 EPSS ≥ {conditions.EPSS_THRESHOLD}인 {len(conditions.targets(vulns, results))}건)")
+        cond_results = conditions.analyze(vulns, results, rows, str(module),
+                                          (out / "deptree.txt").read_text().splitlines(), args.model, usage)
+        usage["usd"] = round(judge.cost(args.model, usage), 4)
+
     step("조치 계산 (Spring Boot BOM 대조)")
     planned, boot_remaining = actions.plan(vulns, rows, latest, buildtool.pinned_versions(module, tool))
 
@@ -142,7 +150,7 @@ def main():
         "model": None if args.no_llm else args.model,
         "boot": {"current": current, "latest_patch": latest},
         "sbom_components": components, "component_usage": component_usage, "vulns": vulns, "packages": rows,
-        "results": results, "actions": planned, "boot_remaining": boot_remaining, "usage": usage, "elapsed_sec": round(time.time() - started),
+        "results": results, "conditions": cond_results, "actions": planned, "boot_remaining": boot_remaining, "usage": usage, "elapsed_sec": round(time.time() - started),
     }
     (out / "summary.json").write_text(json.dumps(summary, ensure_ascii=False, indent=1))
     step("리포트 생성")

@@ -189,51 +189,56 @@ def system_prompt():
     return prompt + SYSTEM_V2_EXTRA if os.environ.get("PROMPT") == "v2" else prompt
 
 
-def judge(model, pkg, vulns, reach_row, repo, deptree_lines, usage, tool_budget=None, grep_limit=20):
-    evidence = initial_evidence(pkg, vulns, reach_row)
-    tool_kinds = {}
-    messages = [
-        {"role": "system", "content": system_prompt()},
-        {"role": "user", "content": f"패키지: {pkg}\n초기 근거:\n{json.dumps(evidence, ensure_ascii=False, indent=1)}"},
-    ]
-    trace = []
+def run_tool(name, args, repo, deptree_lines, grep_limit):
+    if name == "search_config":
+        return grep(args["pattern"], f"{repo}/src/main/resources", grep_limit, include=CONFIG_FILES)
+    if name == "search_source":
+        return grep(args["pattern"], f"{repo}/src/main", grep_limit, include=("*.java", "*.kt"))
+    if name == "build_file":
+        build = next(f for f in ("build.gradle.kts", "build.gradle", "pom.xml") if os.path.exists(f"{repo}/{f}"))
+        return grep(args["pattern"], f"{repo}/{build}", grep_limit)
+    return dependency_path(deptree_lines, args["artifact"])
+
+
+def run_agent(model, system, user, evidence, repo, deptree_lines, usage, tool_budget=None, grep_limit=20, label=""):
+    """도구 호출 루프. 도구 결과는 T1, T2… ID로 evidence에 쌓이고, 최종 JSON과 함께 돌려준다."""
+    tool_kinds, trace = {}, []
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": user}]
     for _ in range(MAX_TURNS):
         msg = call_openai(model, messages, usage)
         messages.append(msg)
         if not msg.get("tool_calls"):
             content = msg["content"].strip()
-            content = content[content.find("{"):content.rfind("}") + 1]
-            result = json.loads(content)
-            problems = validate(result, evidence, tool_kinds, reach_row)
-            # 리포트에서 근거 원문을 보여줄 수 있게, 인용된 근거만 결과에 붙인다
-            cited = {e for r in result.get("reasons", []) for e in r.get("evidence", [])}
-            result["evidence"] = {k: evidence[k] for k in sorted(cited) if k in evidence}
-            if problems:
-                # 검증 실패 시 안전한 쪽(B, 우선순위 유지)으로 되돌리고 사람 검토로 넘긴다
-                result = {**result, "llm_category": result.get("category"), "category": "B", "needs_review": True}
-            return result, problems, trace
+            return json.loads(content[content.find("{"):content.rfind("}") + 1]), tool_kinds, trace
         for tc in msg["tool_calls"]:
             name, args = tc["function"]["name"], json.loads(tc["function"]["arguments"])
             if tool_budget is not None and len(tool_kinds) >= tool_budget:
                 messages.append({"role": "tool", "tool_call_id": tc["id"],
                                  "content": "도구 호출 예산 초과. 지금까지 모은 근거로 최종 JSON을 출력하라."})
                 continue
-            if name == "search_config":
-                out = grep(args["pattern"], f"{repo}/src/main/resources", grep_limit, include=CONFIG_FILES)
-            elif name == "search_source":
-                out = grep(args["pattern"], f"{repo}/src/main", grep_limit, include=("*.java", "*.kt"))
-            elif name == "build_file":
-                build = next(f for f in ("build.gradle.kts", "build.gradle", "pom.xml") if os.path.exists(f"{repo}/{f}"))
-                out = grep(args["pattern"], f"{repo}/{build}", grep_limit)
-            else:
-                out = dependency_path(deptree_lines, args["artifact"])
+            out = run_tool(name, args, repo, deptree_lines, grep_limit)
             tid = f"T{len(tool_kinds) + 1}"
             tool_kinds[tid] = name
             evidence[tid] = {"tool": name, "args": args, "result": out}
             trace.append(f"{tid} {name}({args}) -> {len(out)}줄")
             messages.append({"role": "tool", "tool_call_id": tc["id"],
                              "content": json.dumps({"id": tid, "result": out or ["(결과 없음)"]}, ensure_ascii=False)})
-    raise RuntimeError(f"{pkg}: {MAX_TURNS}턴 안에 결론 못 냄")
+    raise RuntimeError(f"{label}: {MAX_TURNS}턴 안에 결론 못 냄")
+
+
+def judge(model, pkg, vulns, reach_row, repo, deptree_lines, usage, tool_budget=None, grep_limit=20):
+    evidence = initial_evidence(pkg, vulns, reach_row)
+    user = f"패키지: {pkg}\n초기 근거:\n{json.dumps(evidence, ensure_ascii=False, indent=1)}"
+    result, tool_kinds, trace = run_agent(model, system_prompt(), user, evidence, repo, deptree_lines, usage,
+                                          tool_budget, grep_limit, label=pkg)
+    problems = validate(result, evidence, tool_kinds, reach_row)
+    # 리포트에서 근거 원문을 보여줄 수 있게, 인용된 근거만 결과에 붙인다
+    cited = {e for r in result.get("reasons", []) for e in r.get("evidence", [])}
+    result["evidence"] = {k: evidence[k] for k in sorted(cited) if k in evidence}
+    if problems:
+        # 검증 실패 시 안전한 쪽(B, 우선순위 유지)으로 되돌리고 사람 검토로 넘긴다
+        result = {**result, "llm_category": result.get("category"), "category": "B", "needs_review": True}
+    return result, problems, trace
 
 
 def rule_priority(vulns):

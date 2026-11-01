@@ -1,6 +1,7 @@
 """run.py가 만든 summary를 사람이 읽는 HTML 리포트로 만든다 (외부 리소스 없는 단일 파일)."""
 import html
 import json
+import re
 
 SEV_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "UNKNOWN": 4}
 CATEGORY = {
@@ -72,13 +73,22 @@ def epss_text(epss):
     return "-" if epss is None else f"{epss:.3f}"
 
 
-def package_view(pkg, row, vulns, judged, act):
+def is_urgent(v, conditions):
+    """CRITICAL/HIGH/KEV이면서, 공격 조건 분석에서 '공격 불가'로 검증되지 않은 취약점."""
+    verdict = (conditions.get(f'{v["VulnerabilityID"]}|{v["PkgName"]}') or {}).get("result", {}).get("verdict")
+    return (v["Severity"] in ("CRITICAL", "HIGH") or v["kev"]) and verdict != "not_exploitable"
+
+
+def package_view(pkg, row, vulns, judged, act, conditions=None):
+    conditions = conditions or {}
     res = judged["result"]
     vs = sorted(vulns, key=lambda v: (SEV_ORDER.get(v["Severity"], 9), -(v["epss"] or 0)))
     solved = set(act.get("solved_ids", [])) if act else set()
     left = [v for v in vs if v["VulnerabilityID"] not in solved]
     category = res.get("category", "?")
-    urgent = any(v["Severity"] in ("CRITICAL", "HIGH") or v["kev"] for v in left)
+    urgent = any(is_urgent(v, conditions) for v in left)
+    analyzed = {v["VulnerabilityID"]: conditions[f'{v["VulnerabilityID"]}|{pkg}'] for v in vs
+                if f'{v["VulnerabilityID"]}|{pkg}' in conditions}
     # 우선순위는 LLM이 아니라 규칙으로: 실행되고(A·B) Boot 패치 후에도 남는 CRITICAL/HIGH/KEV가 있으면 P1
     priority = "-" if category == "?" else ("P3" if category == "C" else ("P1" if urgent else "P2"))
     return {
@@ -86,7 +96,7 @@ def package_view(pkg, row, vulns, judged, act):
         "problems": judged["problems"], "category": category, "priority": priority,
         "max_sev": (left or vs)[0]["Severity"] if vs else "UNKNOWN",
         "max_epss": max((v["epss"] or 0) for v in (left or vs)) if vs else 0,
-        "kev": any(v["kev"] for v in left),
+        "kev": any(v["kev"] for v in left), "conditions": analyzed,
     }
 
 
@@ -110,6 +120,11 @@ def card(p, open_card=False):
         badges.insert(0, '<span class="badge sev-CRITICAL">KEV</span>')
     if p["res"].get("needs_review"):
         badges.append('<span class="badge review">사람 검토</span>')
+    verdicts = [c["result"]["verdict"] for c in p["conditions"].values()]
+    if "exploitable" in verdicts:
+        badges.insert(0, '<span class="badge sev-CRITICAL">공격 조건 충족</span>')
+    elif "not_exploitable" in verdicts:
+        badges.append('<span class="badge cat-c">조건 미충족 · 사람 확인</span>')
     via = ", ".join("경로 불명(Maven 버전 조정)" if v.startswith("maven-mediated:") else v.split(":")[1]
                     for v in p["row"]["via"]) or "-"
     origin = ("직접 선언" if p["row"]["direct"] else
@@ -127,6 +142,7 @@ def card(p, open_card=False):
     evidence = p["res"].get("evidence") or {}
     ev_html = (f'<details><summary class="meta" style="cursor:pointer">인용된 근거 원문 {len(evidence)}개</summary>'
                f'<pre>{esc(json.dumps(evidence, ensure_ascii=False, indent=1))}</pre></details>') if evidence else ""
+    cond_html = conditions_block(p["conditions"])
     rows = "".join(
         f'<tr><td>{esc(v["VulnerabilityID"])}</td><td>{esc(v["Severity"])}</td>'
         f'<td class="num">{epss_text(v["epss"])}</td>'
@@ -139,7 +155,33 @@ def card(p, open_card=False):
              f'{rows}</table></details>')
     return (f'<details class="card"{" open" if open_card else ""}><summary><div class="pkg">{esc(p["pkg"])} '
             f'<span class="ver">{esc(p["row"]["version"])}</span></div><div class="badges">{"".join(badges)}</div>'
-            f'<div class="sub">{sub}</div></summary><div class="body">{problems}{fix}{reasons}{ev_html}{table}</div></details>')
+            f'<div class="sub">{sub}</div></summary><div class="body">{problems}{fix}{reasons}{cond_html}{ev_html}{table}</div></details>')
+
+
+VERDICT = {"exploitable": ("공격 조건 충족", "sev-CRITICAL"), "not_exploitable": ("조건 미충족 · 사람 확인 권장", "cat-c"),
+           "unknown": ("판단 불가", "cat-u")}
+STATUS = {"met": "충족", "not_met": "미충족", "unknown": "불명"}
+
+
+def conditions_block(conditions):
+    if not conditions:
+        return ""
+    parts = []
+    for cve, c in sorted(conditions.items()):
+        r = c["result"]
+        label, cls = VERDICT.get(r["verdict"], VERDICT["unknown"])
+        items = "".join(
+            f'<div class="reason">· <b>[{esc(sc.get("name", ""))}]</b> {esc(STATUS.get(cd["status"], cd["status"]))} — '
+            f'{esc(cd.get("meaning", ""))} <span class="meta">“{esc(cd.get("quote", "")[:120])}”</span>'
+            + "".join(f'<span class="ev">{esc(e)}</span>' for e in cd.get("evidence", [])) + "</div>"
+            for sc in r.get("scenarios", []) for cd in sc.get("conditions", []))
+        items += "".join(
+            f'<div class="reason">· <b>[완화 요인]</b> {esc(STATUS.get(m.get("status"), m.get("status")))} — '
+            f'{esc(m.get("meaning", ""))} <span class="meta">“{esc(m.get("quote", "")[:120])}”</span></div>'
+            for m in r.get("mitigations", []) if not re.search(r"upgrad", m.get("quote", ""), re.I))
+        parts.append(f'<div class="fix"><b>공격 조건 분석 · {esc(cve)}</b> <span class="badge {cls}">{esc(label)}</span>'
+                     f'<div style="margin-top:6px">{esc(r.get("summary", ""))}</div>{items}</div>')
+    return "".join(parts)
 
 
 def section(title, desc, items, count_key="left", open_cards=False):
@@ -174,8 +216,9 @@ def render(s):
     for v in s["vulns"]:
         by_pkg.setdefault(v["PkgName"], []).append(v)
     actions = s.get("actions", {})
+    conditions = s.get("conditions", {})
     views = [package_view(r["package"], r, by_pkg.get(r["package"], []), s["results"][r["package"]],
-                          actions.get(r["package"])) for r in s["packages"]]
+                          actions.get(r["package"]), conditions) for r in s["packages"]]
     views.sort(key=lambda p: (SEV_ORDER.get(p["max_sev"], 9), -p["max_epss"]))
 
     by_boot = [p for p in views if not p["left"]]
@@ -187,7 +230,8 @@ def render(s):
     review = [p for p in views if p["res"].get("needs_review")]
     n = lambda items: sum(len(p["left"]) for p in items)  # noqa: E731
     solved_total = len(s["vulns"]) - n(views)
-    urgent_count = sum(1 for p in now for v in p["left"] if v["Severity"] in ("CRITICAL", "HIGH") or v["kev"])
+    urgent_count = sum(1 for p in now for v in p["left"] if is_urgent(v, conditions))
+    skipped = sum(1 for c in conditions.values() if c["result"]["verdict"] == "not_exploitable")
 
     boot = s["boot"]
     cross = [p for p in views if p["act"].get("cross_line") and p["category"] in ("A", "B")]
@@ -219,7 +263,7 @@ def render(s):
 <div class="funnel">
 <div class="tile"><div class="l">스캔된 취약점</div><div class="n">{len(s["vulns"])}</div><div class="s">{len(views)}개 패키지</div></div>
 {boot_tile}
-<div class="tile p1"><div class="l">지금 조치 (P1)</div><div class="n">{urgent_count}</div><div class="s">실행되며 CRITICAL/HIGH·KEV · {len(now)}개 패키지</div></div>
+<div class="tile p1"><div class="l">지금 조치 (P1)</div><div class="n">{urgent_count}</div><div class="s">실행되며 CRITICAL/HIGH·KEV · {len(now)}개 패키지{f" · 공격 조건 미충족 {skipped}건 제외" if skipped else ""}</div></div>
 <div class="tile c"><div class="l">실행 안 됨 (C)</div><div class="n">{n(off)}</div><div class="s">{len(off)}개 패키지 · 근거 포함</div></div>
 </div>
 {line_note}{review_note}

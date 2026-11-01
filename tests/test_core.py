@@ -151,3 +151,45 @@ def test_validate_rejects_bad_citations_and_unsafe_c():
     assert "근거에 없는 취약점 ID" in text
     assert "검색 근거 미인용" in text
     assert "직접 선언한 의존성을 C로" in text
+
+
+# --- conditions: CVE 공격 조건 검증 ---------------------------------------------
+
+import conditions  # noqa: E402
+
+DESC = ("If all of the following were true, RCE: - writes enabled for the default servlet (disabled by default) "
+        "- support for partial PUT (enabled by default). Requests are blocked when the firewall is in use.")
+
+
+def cond(quote, status, evidence):
+    return {"quote": quote, "status": status, "evidence": evidence}
+
+
+def test_conditions_not_exploitable_needs_quote_and_search_evidence():
+    result = {"scenarios": [{"name": "RCE", "conditions": [
+        cond("writes enabled for the default servlet", "not_met", ["T1: 설정 검색 결과 없음"]),  # 설명 붙은 ID도 인정
+        cond("support for partial PUT", "met", ["T2"]),
+    ]}], "verdict": "not_exploitable"}
+    problems = conditions.validate(result, DESC, {"T1": "search_config", "T2": "search_source"})
+    assert problems == [] and result["verdict"] == "not_exploitable"
+
+
+def test_conditions_rejects_invented_quote_and_unsupported_not_met():
+    invented = {"scenarios": [{"name": "x", "conditions": [cond("attacker controls the JVM", "not_met", ["T1"])]}],
+                "verdict": "not_exploitable"}
+    conditions.validate(invented, DESC, {"T1": "search_config"})
+    assert invented["verdict"] == "unknown"  # 원문에 없는 인용은 무효
+
+    unsupported = {"scenarios": [{"name": "x", "conditions": [cond("support for partial PUT", "not_met", [])]}],
+                   "verdict": "not_exploitable"}
+    conditions.validate(unsupported, DESC, {})
+    assert unsupported["verdict"] == "unknown"  # 검색 근거 없는 미충족은 무효
+
+
+def test_conditions_every_scenario_must_be_blocked_and_mitigations_ignored():
+    result = {"scenarios": [
+        {"name": "A", "conditions": [cond("writes enabled for the default servlet", "not_met", ["T1"])]},
+        {"name": "B", "conditions": [cond("support for partial PUT", "met", ["T1"])]},
+    ], "mitigations": [cond("the firewall is in use", "not_met", ["T1"])], "verdict": "not_exploitable"}
+    conditions.validate(result, DESC, {"T1": "search_config"})
+    assert result["verdict"] == "exploitable"  # 시나리오 B가 막히지 않았고, 완화 요인은 판정에 쓰지 않는다
